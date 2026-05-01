@@ -48,101 +48,22 @@ Ising chains}
 \author{Jannis Lutz, Anil Jean Pekgöz, Pavle Smiljanić}
 \date{\today}
 \begin{abstract}
-\textbf{abstract} We will do great things
+Tensor network methods, in particular Matrix Product States (MPS), 
+provide a powerful framework for studying quantum many-body systems that fulfill the area law. 
+In this work, we investigate the transverse-field Ising model using the Time-Evolving Block Decimation (TEBD) algorithm. 
+By performing both imaginary- and real-time evolution, we characterize ground-state properties and compute dynamical correlation functions, 
+with the ultimate goal of extracting the dynamic structure factor $S(k, \omega)$.
 \end{abstract}
 
 \maketitle
 
-\section{Introduction}
-\subsection{Transverse-field Ising model}
-The underlying Hamiltonian for our discussion is the one-dimensional transverse-field Ising model
-\begin{equation}
-    \label{eq:TFI}
-    \hat{H} = -J \sum_{i} \hat{\sigma}^x_i \hat{\sigma}^x_{i+1} - g \sum_i \hat{\sigma}^z_i
-\end{equation}
-with Pauli matrices $\hat{\sigma}_i^j$, transverse-field strength $g$, and coupling strength $J$. The latter will be set
-to $1$ in the following. This model can be solved analytically by performing a Jordan-Wigner transformation, i.e.
-mapping the spin operators to fermionic operators $\hat{c}_j$:
-\begin{align*}
-    \hat{\sigma}_j^z &= \mathbbm{1} - 2\hat{c}_j^\dagger \hat{c}_j \\
-    \hat{\sigma}_j^- \coloneqq \frac{1}{2} \left( \hat{\sigma}_j^x - i \hat{\sigma}_j^y\right) 
-    &= \left( - 1\right)^{\sum_{k < j} \hat{c}_k^\dagger \hat{c}_k} \cdot \hat{c}_j^\dagger \\ 
-    \hat{\sigma}_j^+ \coloneqq \frac{1}{2} \left( \hat{\sigma}_j^x + i \hat{\sigma}_j^y\right) 
-    &= \left( - 1\right)^{\sum_{k < j} \hat{c}_k^\dagger \hat{c}_k} \cdot \hat{c}_j.
-\end{align*}
-Following that, a discrete fourier transform of the form $\hat{c}_j = 1/\sqrt{N}\sum_k e^{-ikj} \hat{c}_k$ is performed
-which yields the Hamiltonian in momentum representation 
-\begin{equation*}
- \hat{H} = \sum_k [ 2 \cos k - 2 g ] \hat{c}_k^\dagger \hat{c_k} + \text{const}.
-\end{equation*}
-Ultimately, a Bogoliubov transformation diagonalizes the Hamiltonian $\hat{H} = 
-\sum_k \varepsilon_k \hat{d}_k^\dagger \hat{d}_k$ and we obtain the quasiparticle
-energy dispersion 
-\begin{equation}
-    \label{eq:dispersion}
-    \varepsilon_k^\pm = \pm  2 \sqrt{(\cos k - g)^2 + \sin^2 k}
-\end{equation}
-This energy gap closes at $g = J = 1$ and $k = \pi$, indicating the presence
-of a quantum phase transition at the critical point $g_\text{crit} = 1$. 
-The system transitions from a ferromagnetic phase ($g < 1$) to a paramagnetic phase ($g > 1$). \cite{dutta2015,Coleman_2015}
-
-When computing the spectral function later on, we will try to recover the shape of equation (\ref{eq:dispersion}).
-
-\subsection{Matrix product states (MPS)}
-A generic many-body quantum state of a spin-$\frac{1}{2}$ system of size $N$ can be written as 
-\begin{equation}
-    \label{eq:psi}
-    \ket{\psi} = \sum_{j_1, j_2, \dots, j_N} \psi_{j_1, j_2, \dots, j_N} \ket{j_1} \otimes \ket{j_2} \otimes \dots \otimes \ket{j_N},
-\end{equation}
-where $\psi_{j_1, j_2, \dots, j_N}$ is an order $N$ tensor. The idea of a MPS is to rewrite equation (\ref{eq:psi}) as a product of matrices
-
-\begin{align}
-    \ket{\psi} &= \sum_{j_1, \dots, j_N} \sum_{\alpha_2, \dots, \alpha_N} M^{[1]j_1}_{\alpha_1 \alpha_2} M^{[2]j_2}_{\alpha_2 \alpha_3} \dots M^{[N]j_N}_{\alpha_N \alpha_{N+1}} \ket{j_1, j_2, \dots, j_N} \notag \\
-    &\equiv \sum_{j_1, \dots, j_N} M^{[1]j_1} M^{[2]j_2} \dots M^{[N]j_N} \ket{j_1, j_2, \dots, j_N}.
-\end{align}
-Each $M^{[n]j_n}$ is a $\chi_n \times \chi_n$ dimensional matrix, where $\chi_n$ is denoted as the bond dimension. 
-The $\alpha_n$'s are referred to as "virtual" indices and the $j_n$'s are the so called "physical" indices.
-The MPS representation can be obtain by successive reshaping and applying singular value decompositions (SVDs) to the initial coefficient tensor $\psi_{j_1, j_2, \dots, j_N}$.\cite{Hauschild2018}
-
-This ansatz is very useful for numerical simulations. Unlike exact diagonalization methods whose computational cost usually grows exponentially with system size $N$, 
-MPS algorithms typically scale polynomially in system size as $\mathcal{O}(\text{poly}(N))$.
-
-\subsection{Time-Evolving Block Decimation (TEBD)}
-When using the TEBD algorithm, we are interested in evaluating the time evolution of a quantum state
-\begin{equation*}
-    \ket{\psi(t)} = \hat{U}(t) \ket{\psi(0)}.
-\end{equation*}
-We consider a Hamiltonian with nearest-neighbor interactions and split it into even and odd indices 
-\begin{equation*}
-    \hat{H} = \sum_{n \text{ odd}} \hat{h}^{[n, n+1]} + \sum_{n \text{ even}} \hat{h}^{[n, n+1]},
-\end{equation*}
-divide the time evolution operator into small time slices $\delta t$, and  decompose the time-evolution operator by making use of the Suzuki-Trotter decomposition in linear order
-\begin{equation}
-    \hat{U}(\delta t) = \prod_{n \text{ odd}} \hat{U}^{[n, n+1]} (\delta t) \prod_{n \text{ even}} \hat{U}^{[n, n+1]} (\delta t) + \mathcal{O}(\delta t^2).
-\end{equation}
-
-This approximation makes it apparent that, due to the first-order nature, the Trotter error
-accumulates over long simulation times.
-Roughly speaking, the heart of the TEBD algorithm consists of the successive application of these two-site
-unitary operators, which locally update our MPS, i.e. quantum state, with every time step.\cite{Hauschild2018}
+\input{introduction}
+\input{results}
+\input{conclusion}
+\input{appendix}
 
 
 \bibliography{bibsamp}% Produces the bibliography via BibTeX.
 
-%%%%%%%
-% Code Listings
-%%%%%%%
-\appendix
-\begin{widetext}
-\section{Code listing} \label{app:codes}
-\begin{lstlisting}[language=Python]
-# Dependencies
-import numpy as np
-import matplotlib.pyplot as plt
-import pickle
-from scipy.sparse import csr_matrix, kron
 
-
-\end{lstlisting}
-\end{widetext}
 \end{document}
