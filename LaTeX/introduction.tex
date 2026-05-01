@@ -1,12 +1,13 @@
 \section{Introduction}
 \subsection{Transverse-field Ising model}
-The underlying Hamiltonian for our discussion is the one-dimensional transverse-field Ising model
+The underlying Hamiltonian for our discussion is the one-dimensional transverse-field Ising model with an additional longitudinal component
 \begin{equation}
     \label{eq:TFI}
-    \hat{H} = -J \sum_{i} \hat{\sigma}^x_i \hat{\sigma}^x_{i+1} - g \sum_i \hat{\sigma}^z_i
+    \hat{H} = -J \sum_{i} \hat{\sigma}^x_i \hat{\sigma}^x_{i+1} - g \sum_i \hat{\sigma}^z_i - h \sum_i \sigma_i^x
 \end{equation}
-with Pauli matrices $\hat{\sigma}_i^j$, transverse-field strength $g$, and coupling strength $J$. The latter will be set
-to $1$ in the following. This model can be solved analytically by performing a Jordan-Wigner transformation, i.e.
+with Pauli matrices $\hat{\sigma}_i^j$, transverse-field strength $g$, longitudinal-field strength $h$, and coupling strength $J$. ~\cite{labmanual}
+For $h = 0$, we recover the transverse-field Ising model, which we can solve analytically:
+first, we set $J=1$ and perform a a Jordan-Wigner transformation, i.e.
 mapping the spin operators to fermionic operators $\hat{c}_j$:
 \begin{align*}
     \hat{\sigma}_j^z &= \mathbbm{1} - 2\hat{c}_j^\dagger \hat{c}_j \\
@@ -29,9 +30,9 @@ energy dispersion
 \end{equation}
 This energy gap closes at $g = J = 1$ and $k = \pi$, indicating the presence
 of a quantum phase transition at the critical point $g_\text{crit} = 1$. 
-The system transitions from a ferromagnetic phase ($g < 1$) to a paramagnetic phase ($g > 1$). \cite{dutta2015,Coleman_2015}
+The system transitions from a ferromagnetic phase ($g < 1$) to a paramagnetic phase ($g > 1$). ~\cite{dutta2015,Coleman_2015}
 
-When computing the spectral function later on, we will try to recover the shape of equation (\ref{eq:dispersion}).
+When computing the spectral function later on, we will recover a shape similar of equation (\ref{eq:dispersion}), i.e., the $h=0$ case.
 
 \subsection{Matrix product states (MPS)}
 A generic many-body quantum state of a spin-$\frac{1}{2}$ system of size $N$ can be written as 
@@ -57,6 +58,12 @@ When using the TEBD algorithm, we are interested in evaluating the time evolutio
 \begin{equation*}
     \ket{\psi(t)} = \hat{U}(t) \ket{\psi(0)}.
 \end{equation*}
+The time evolution can either be performed for real times $t$, or for imaginary times, i.e., 
+performing a Wick rotation $\tau = i t$. ~\cite{Coleman_2015}
+The latter yields the ground state of the system, given as 
+\begin{equation*}
+    \ket{\psi_0} = \lim_{\tau \to \infty} \frac{\hat{U}(\tau) \ket{\psi (0)}}{|| \hat{U}(\tau) \ket{\psi (0)}  ||}. \text{~\cite{labmanual}}
+\end{equation*}
 We consider a Hamiltonian with nearest-neighbor interactions and split it into even and odd indices 
 \begin{equation*}
     \hat{H} = \sum_{n \text{ odd}} \hat{h}^{[n, n+1]} + \sum_{n \text{ even}} \hat{h}^{[n, n+1]},
@@ -69,4 +76,13 @@ divide the time evolution operator into small time slices $\delta t$, and  decom
 This approximation makes it apparent that, due to the first-order nature, the Trotter error
 accumulates over long simulation times.
 Roughly speaking, the heart of the TEBD algorithm consists of the successive application of these two-site
-unitary operators, which locally update our MPS, i.e. quantum state, with every time step.\cite{Hauschild2018}
+unitary operators, which locally update our MPS, i.e. quantum state, with every time step. ~\cite{Hauschild2018}
+
+\subsection{Dynamical Spin Structue factor}
+
+The excitation spectrum of a quantum system is encoded in the spin structure factor $S(k, \omega)$, which is formally given by
+the double Fourier transform of the real-time spin-spin correlation fucntion in space and time $C(t,j)$. For the numeric implementation,
+the fourier transforms become discretized and we multiply by a Gaussian window function $G(t_n)$ to avoid Gibbs oscillations.
+\begin{equation*}
+    S(k, \omega) = \sum_{j=0}^{L-1} \sum_{t_n = 0}^N e^{i \omega \Delta t \cdot t_n - i k \cdot j} C (\Delta t \cdot t_n, j) \cdot G(t_n). \text{~\cite{labmanual}}
+\end{equation*} 
